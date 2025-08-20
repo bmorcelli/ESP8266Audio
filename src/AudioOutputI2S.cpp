@@ -153,14 +153,20 @@ bool AudioOutputI2S::SetRate(int hz) {
     if (i2sOn) {
 #ifdef ESP32
 #if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
-        int rate = AdjustI2SRate(hz);
+        uint32_t rate = (uint32_t)AdjustI2SRate(hz);
+        esp_err_t err;
         if (output_mode == INTERNAL_PDM) {
             i2s_pdm_tx_clk_config_t clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(rate);
-            i2s_channel_reconfig_pdm_tx_clock(txHandle, &clk_cfg);
+            i2s_channel_disable(txHandle);
+            err = i2s_channel_reconfig_pdm_tx_clock(txHandle, &clk_cfg);
+            i2s_channel_enable(txHandle);
         } else {
             i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(rate);
-            i2s_channel_reconfig_std_clock(txHandle, &clk_cfg);
+            i2s_channel_disable(txHandle);
+            err = i2s_channel_reconfig_std_clock(txHandle, &clk_cfg);
+            i2s_channel_enable(txHandle);
         }
+        return err == ESP_OK;
 #else
         i2s_set_sample_rates((i2s_port_t)portNo, AdjustI2SRate(hz));
 #endif
@@ -236,9 +242,10 @@ bool AudioOutputI2S::begin(bool txDAC) {
         if (i2s_new_channel(&chan_cfg, &txHandle, NULL) != ESP_OK) {
             return false;
         }
+        uint32_t rate = (uint32_t)AdjustI2SRate(hertz);
         if (output_mode == INTERNAL_PDM) {
             i2s_pdm_tx_config_t pdm_cfg = {
-                .clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(44100),
+                .clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(rate),
                 .slot_cfg = I2S_PDM_TX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT,
                                 channels == 1 ? I2S_SLOT_MODE_MONO : I2S_SLOT_MODE_STEREO),
                 .gpio_cfg = {
@@ -255,7 +262,7 @@ bool AudioOutputI2S::begin(bool txDAC) {
                 return false;
             }
             i2s_std_config_t std_cfg = {
-                .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(44100),
+                .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(rate),
                 .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT,
                                 channels == 1 ? I2S_SLOT_MODE_MONO : I2S_SLOT_MODE_STEREO),
                 .gpio_cfg = {
@@ -390,7 +397,9 @@ bool AudioOutputI2S::begin(bool txDAC) {
     }
 #endif
     i2sOn = true;
+#if !(defined(ESP32) && defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
     SetRate(hertz); // Default
+#endif
     return true;
 }
 

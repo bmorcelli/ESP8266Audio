@@ -253,9 +253,14 @@ bool AudioOutputSPDIF::SetRate(int hz) {
 #if defined(ESP32)
 #if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
     i2s_std_clk_config_t clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(adjustedHz);
-    if (i2s_channel_reconfig_std_clock(txHandle, &clk_cfg) != ESP_OK) {
+    i2s_channel_disable(txHandle);
+    esp_err_t err = i2s_channel_reconfig_std_clock(txHandle, &clk_cfg);
+    i2s_channel_enable(txHandle);
+    if (err != ESP_OK) {
         audioLogger->println("ERROR changing S/PDIF sample rate");
+        return false;
     }
+    return true;
 #else
     if (i2s_set_sample_rates((i2s_port_t)portNo, adjustedHz) == ESP_OK) {
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
@@ -268,7 +273,9 @@ bool AudioOutputSPDIF::SetRate(int hz) {
 #endif
     } else {
         audioLogger->println("ERROR changing S/PDIF sample rate");
+        return false;
     }
+    return true;
 #endif
 #elif defined(ESP8266)
     I2SDriver.setRate(adjustedHz);
