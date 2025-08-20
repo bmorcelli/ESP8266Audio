@@ -22,6 +22,13 @@
 
 #include "AudioOutput.h"
 
+#if defined(ESP32)
+#include <esp_idf_version.h>
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#include "driver/i2s_common.h"
+#endif
+#endif
+
 #if defined(ARDUINO_ARCH_RP2040)
 #include <Arduino.h>
 #include <I2S.h>
@@ -80,5 +87,9 @@ protected:
 
 #if defined(ARDUINO_ARCH_RP2040)
     I2S i2s;
+#endif
+
+#if defined(ESP32) && defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    i2s_chan_handle_t txHandle;
 #endif
 };
