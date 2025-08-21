@@ -40,17 +40,17 @@
 #if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 #include "driver/i2s_common.h"
 #endif
-#define SPDIF_OUT_PIN_DEFAULT  27
-#define DMA_BUF_COUNT_DEFAULT  8
-#define DMA_BUF_SIZE_DEFAULT   256
+#define SPDIF_OUT_PIN_DEFAULT 27
+#define DMA_BUF_COUNT_DEFAULT 8
+#define DMA_BUF_SIZE_DEFAULT 256
 #elif defined(ESP8266)
-#define SPDIF_OUT_PIN_DEFAULT  3
-#define DMA_BUF_COUNT_DEFAULT  32
-#define DMA_BUF_SIZE_DEFAULT   64
+#define SPDIF_OUT_PIN_DEFAULT 3
+#define DMA_BUF_COUNT_DEFAULT 32
+#define DMA_BUF_SIZE_DEFAULT 64
 #endif
 
 class AudioOutputSPDIF : public AudioOutput {
-public:
+  public:
     AudioOutputSPDIF(int dout_pin = SPDIF_OUT_PIN_DEFAULT, int port = 0, int dma_buf_count = DMA_BUF_COUNT_DEFAULT);
     virtual ~AudioOutputSPDIF() override;
     bool SetPinout(int bclkPin, int wclkPin, int doutPin);
@@ -61,13 +61,13 @@ public:
     virtual bool ConsumeSample(int16_t sample[2]) override;
     virtual bool stop() override;
 
-    bool SetOutputModeMono(bool mono);  // Force mono output no matter the input
+    bool SetOutputModeMono(bool mono); // Force mono output no matter the input
 
     const uint32_t VUCP_PREAMBLE_B = 0xCCE80000; // 11001100 11101000
     const uint32_t VUCP_PREAMBLE_M = 0xCCE20000; // 11001100 11100010
     const uint32_t VUCP_PREAMBLE_W = 0xCCE40000; // 11001100 11100100
 
-protected:
+  protected:
     virtual inline int AdjustI2SRate(int hz) {
         return rate_multiplier * hz;
     }

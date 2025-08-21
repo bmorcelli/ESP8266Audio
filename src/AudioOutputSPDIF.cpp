@@ -43,8 +43,8 @@
 #if defined(ESP32)
 #include <esp_idf_version.h>
 #if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
-#include "driver/i2s_std.h"
 #include "driver/i2s_common.h"
+#include "driver/i2s_std.h"
 #else
 #include "driver/i2s.h"
 #endif
@@ -87,8 +87,7 @@ static const uint16_t spdif_bmclookup[256] PROGMEM = {
     0x332a, 0xb32a, 0xd32a, 0x532a, 0xcb2a, 0x4b2a, 0x2b2a, 0xab2a,
     0xcd2a, 0x4d2a, 0x2d2a, 0xad2a, 0x352a, 0xb52a, 0xd52a, 0x552a,
     0xccaa, 0x4caa, 0x2caa, 0xacaa, 0x34aa, 0xb4aa, 0xd4aa, 0x54aa,
-    0x32aa, 0xb2aa, 0xd2aa, 0x52aa, 0xcaaa, 0x4aaa, 0x2aaa, 0xaaaa
-};
+    0x32aa, 0xb2aa, 0xd2aa, 0x52aa, 0xcaaa, 0x4aaa, 0x2aaa, 0xaaaa};
 
 AudioOutputSPDIF::AudioOutputSPDIF(int dout_pin, int port, int dma_buf_count) {
     this->portNo = port;
@@ -115,8 +114,7 @@ AudioOutputSPDIF::AudioOutputSPDIF(int dout_pin, int port, int dma_buf_count) {
             .dout = (gpio_num_t)dout_pin,
             .din = I2S_GPIO_UNUSED,
             .invert_flags = {0},
-        }
-    };
+        }};
     if (i2s_channel_init_std_mode(txHandle, &std_cfg) != ESP_OK) {
         audioLogger->println(F("ERROR: Unable to init I2S"));
         return;
@@ -130,7 +128,7 @@ AudioOutputSPDIF::AudioOutputSPDIF(int dout_pin, int port, int dma_buf_count) {
     // Configure ESP32 I2S to roughly compatible to ESP8266 peripheral
     i2s_config_t i2s_config_spdif = {
         .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
-        .sample_rate = 88200, // 2 x sampling_rate
+        .sample_rate = 88200,                         // 2 x sampling_rate
         .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT, // 32bit words
         .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT, // Right than left
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
@@ -141,15 +139,15 @@ AudioOutputSPDIF::AudioOutputSPDIF(int dout_pin, int port, int dma_buf_count) {
         .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // lowest interrupt priority
         .dma_buf_count = dma_buf_count,
         .dma_buf_len = DMA_BUF_SIZE_DEFAULT, // bigger buffers, reduces interrupts
-        .use_apll = true, // Audio PLL is needed for low clock jitter
-        .tx_desc_auto_clear = true, // Silence on underflow
-        .fixed_mclk = 0, // Unused
+        .use_apll = true,                    // Audio PLL is needed for low clock jitter
+        .tx_desc_auto_clear = true,          // Silence on underflow
+        .fixed_mclk = 0,                     // Unused
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
-        .mclk_multiple = I2S_MCLK_MULTIPLE_512, // Unused
+        .mclk_multiple = I2S_MCLK_MULTIPLE_512,    // Unused
         .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT // Use bits per sample
 #elif ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
         .mclk_multiple = I2S_MCLK_MULTIPLE_DEFAULT, // Unused
-        .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT // Use bits per sample
+        .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT  // Use bits per sample
 #endif
     };
     if (i2s_driver_install((i2s_port_t)portNo, &i2s_config_spdif, 0, NULL) != ESP_OK) {
@@ -161,7 +159,7 @@ AudioOutputSPDIF::AudioOutputSPDIF(int dout_pin, int port, int dma_buf_count) {
     rate_multiplier = 2; // 2x32bit words
 #endif
 #elif defined(ESP8266)
-    (void) dout_pin;
+    (void)dout_pin;
     if (!I2SDriver.begin(dma_buf_count, DMA_BUF_SIZE_DEFAULT)) {
         audioLogger->println(F("ERROR: Unable to start I2S driver"));
         return;
@@ -187,7 +185,7 @@ AudioOutputSPDIF::~AudioOutputSPDIF() {
 #else
         i2s_stop((i2s_port_t)this->portNo);
         audioLogger->printf("UNINSTALL I2S\n");
-        i2s_driver_uninstall((i2s_port_t)this->portNo); //stop & destroy i2s driver
+        i2s_driver_uninstall((i2s_port_t)this->portNo); // stop & destroy i2s driver
 #endif
     }
 #elif defined(ESP8266)
@@ -207,8 +205,7 @@ bool AudioOutputSPDIF::SetPinout(int bclk, int wclk, int dout) {
         .ws = (gpio_num_t)wclk,
         .dout = (gpio_num_t)dout,
         .din = I2S_GPIO_UNUSED,
-        .invert_flags = {0}
-    };
+        .invert_flags = {0}};
     if (i2s_channel_reconfig_std_gpio(txHandle, &pins) != ESP_OK) {
         audioLogger->println("ERROR setting up S/PDIF I2S pins\n");
         return false;
@@ -222,8 +219,7 @@ bool AudioOutputSPDIF::SetPinout(int bclk, int wclk, int dout) {
         .bck_io_num = bclk,
         .ws_io_num = wclk,
         .data_out_num = dout,
-        .data_in_num = I2S_PIN_NO_CHANGE
-    };
+        .data_in_num = I2S_PIN_NO_CHANGE};
     if (i2s_set_pin((i2s_port_t)portNo, &pins) != ESP_OK) {
         audioLogger->println("ERROR setting up S/PDIF I2S pins\n");
         return false;
@@ -231,9 +227,9 @@ bool AudioOutputSPDIF::SetPinout(int bclk, int wclk, int dout) {
     return true;
 #endif
 #else
-    (void) bclk;
-    (void) wclk;
-    (void) dout;
+    (void)bclk;
+    (void)wclk;
+    (void)dout;
     return false;
 #endif
 }
@@ -315,7 +311,7 @@ bool AudioOutputSPDIF::begin() {
 
 bool AudioOutputSPDIF::ConsumeSample(int16_t sample[2]) {
     if (!i2sOn) {
-        return true;    // Sink the data
+        return true; // Sink the data
     }
     int16_t ms[2];
     uint16_t hi, lo, aux;
@@ -374,7 +370,7 @@ bool AudioOutputSPDIF::ConsumeSample(int16_t sample[2]) {
 #else
     // Assume DMA buffers are multiples of 16 bytes. Either we write all bytes or none.
     size_t bytes_written;
-    esp_err_t ret = i2s_write((i2s_port_t)portNo, (const char*)&buf, 8 * channels, &bytes_written, 0);
+    esp_err_t ret = i2s_write((i2s_port_t)portNo, (const char *)&buf, 8 * channels, &bytes_written, 0);
     // If we didn't write all bytes, return false early and do not increment frame_num
     if ((ret != ESP_OK) || (bytes_written != (8 * channels))) {
         return false;
