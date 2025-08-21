@@ -254,6 +254,7 @@ bool AudioOutputI2S::begin(bool txDAC) {
                     .invert_flags = {0},
                 }
             };
+            pdm_cfg.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_16BIT;
             if (i2s_channel_init_pdm_tx_mode(txHandle, &pdm_cfg) != ESP_OK) {
                 return false;
             }
@@ -274,6 +275,7 @@ bool AudioOutputI2S::begin(bool txDAC) {
                     .invert_flags = {0},
                 }
             };
+            std_cfg.slot_cfg.slot_bit_width = I2S_SLOT_BIT_WIDTH_16BIT;
             if (i2s_channel_init_std_mode(txHandle, &std_cfg) != ESP_OK) {
                 return false;
             }
