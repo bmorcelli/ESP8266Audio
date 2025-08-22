@@ -69,7 +69,11 @@ class AudioOutputI2S : public AudioOutput {
   protected:
     bool SetPinout();
     virtual int AdjustI2SRate(int hz) {
+        #if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+        return 2*hz;
+        #else
         return hz;
+        #endif
     }
     uint8_t portNo;
     int output_mode;
