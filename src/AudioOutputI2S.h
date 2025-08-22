@@ -22,17 +22,28 @@
 
 #include "AudioOutput.h"
 
+#if defined(ESP32)
+#include <esp_idf_version.h>
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#include "driver/i2s_common.h"
+#endif
+#endif
+
 #if defined(ARDUINO_ARCH_RP2040)
 #include <Arduino.h>
 #include <I2S.h>
 #endif
 
 class AudioOutputI2S : public AudioOutput {
-public:
+  public:
 #if defined(ESP32) || defined(ESP8266)
     AudioOutputI2S(int port = 0, int output_mode = EXTERNAL_I2S, int dma_buf_count = 8, int use_apll = APLL_DISABLE);
-    enum : int { APLL_AUTO = -1, APLL_ENABLE = 1, APLL_DISABLE = 0 };
-    enum : int { EXTERNAL_I2S = 0, INTERNAL_DAC = 1, INTERNAL_PDM = 2 };
+    enum : int { APLL_AUTO = -1,
+                 APLL_ENABLE = 1,
+                 APLL_DISABLE = 0 };
+    enum : int { EXTERNAL_I2S = 0,
+                 INTERNAL_DAC = 1,
+                 INTERNAL_PDM = 2 };
 #elif defined(ARDUINO_ARCH_RP2040)
     AudioOutputI2S(long sampleRate = 44100, pin_size_t sck = 26, pin_size_t data = 28);
 #endif
@@ -50,15 +61,19 @@ public:
     virtual bool stop() override;
 
     bool begin(bool txDAC);
-    bool SetOutputModeMono(bool mono);  // Force mono output no matter the input
-    bool SetLsbJustified(bool lsbJustified);  // Allow supporting non-I2S chips, e.g. PT8211
-    bool SetMclk(bool enabled);  // Enable MCLK output (if supported)
-    bool SwapClocks(bool swap_clocks);  // Swap BCLK and WCLK
+    bool SetOutputModeMono(bool mono);       // Force mono output no matter the input
+    bool SetLsbJustified(bool lsbJustified); // Allow supporting non-I2S chips, e.g. PT8211
+    bool SetMclk(bool enabled);              // Enable MCLK output (if supported)
+    bool SwapClocks(bool swap_clocks);       // Swap BCLK and WCLK
 
-protected:
+  protected:
     bool SetPinout();
     virtual int AdjustI2SRate(int hz) {
+        #if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+        return 2*hz;
+        #else
         return hz;
+        #endif
     }
     uint8_t portNo;
     int output_mode;
@@ -80,5 +95,9 @@ protected:
 
 #if defined(ARDUINO_ARCH_RP2040)
     I2S i2s;
+#endif
+
+#if defined(ESP32) && defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    i2s_chan_handle_t txHandle;
 #endif
 };

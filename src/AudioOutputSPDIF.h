@@ -36,6 +36,10 @@
 #include "AudioOutput.h"
 
 #if defined(ESP32)
+#include <esp_idf_version.h>
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#include "driver/i2s_common.h"
+#endif
 #define SPDIF_OUT_PIN_DEFAULT  27
 #define DMA_BUF_COUNT_DEFAULT  8
 #define DMA_BUF_SIZE_DEFAULT   256
@@ -72,6 +76,9 @@ protected:
     bool i2sOn;
     uint8_t frame_num;
     uint8_t rate_multiplier;
+#if defined(ESP32) && defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    i2s_chan_handle_t txHandle;
+#endif
 };
 
 #endif // _AUDIOOUTPUTSPDIF_H

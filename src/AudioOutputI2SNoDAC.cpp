@@ -20,14 +20,19 @@
 
 #include <Arduino.h>
 #ifdef ESP32
+#include <esp_idf_version.h>
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#include "driver/i2s_common.h"
+#include "driver/i2s_std.h"
+#else
 #include "driver/i2s.h"
+#endif
 #elif defined(ARDUINO_ARCH_RP2040) || ARDUINO_ESP8266_MAJOR >= 3
 #include <I2S.h>
 #elif ARDUINO_ESP8266_MAJOR < 3
 #include <i2s.h>
 #endif
 #include "AudioOutputI2SNoDAC.h"
-
 
 #if defined(ARDUINO_ARCH_RP2040)
 //
@@ -55,10 +60,8 @@ AudioOutputI2SNoDAC::AudioOutputI2SNoDAC(int port) : AudioOutputI2S(port, false)
     WRITE_PERI_REG(PERIPHS_IO_MUX_MTDO_U, orig_bck);
     WRITE_PERI_REG(PERIPHS_IO_MUX_GPIO2_U, orig_ws);
 #endif
-
 }
 #endif
-
 
 AudioOutputI2SNoDAC::~AudioOutputI2SNoDAC() {
 }
@@ -120,11 +123,19 @@ bool AudioOutputI2SNoDAC::ConsumeSample(int16_t sample[2]) {
 
     // Either send complete pulse stream or nothing
 #ifdef ESP32
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    size_t i2s_bytes_written;
+    i2s_channel_write(txHandle, dsBuff, sizeof(uint32_t) * (oversample / 32), &i2s_bytes_written, 0);
+    if (!i2s_bytes_written) {
+        return false;
+    }
+#else
     size_t i2s_bytes_written;
     i2s_write((i2s_port_t)portNo, (const char *)dsBuff, sizeof(uint32_t) * (oversample / 32), &i2s_bytes_written, 0);
     if (!i2s_bytes_written) {
         return false;
     }
+#endif
 #elif defined(ESP8266)
     if (!i2s_write_sample_nb(dsBuff[0])) {
         return false;    // No room at the inn
