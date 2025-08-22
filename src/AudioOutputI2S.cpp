@@ -149,11 +149,15 @@ bool AudioOutputI2S::SetPinout(int bclk, int wclk, int dout, int mclk) {
 
 bool AudioOutputI2S::SetRate(int hz) {
     // TODO - have a list of allowable rates from constructor, check them
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
     this->hertz = 2 * hz;
+#else
+    this->hertz = hz;
+#endif
     if (i2sOn) {
 #ifdef ESP32
 #if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
-        uint32_t rate = (uint32_t)AdjustI2SRate(hz);
+        uint32_t rate = (uint32_t)AdjustI2SRate(hz * 2);
         esp_err_t err;
         if (output_mode == INTERNAL_PDM) {
             i2s_pdm_tx_clk_config_t clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(rate);
