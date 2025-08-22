@@ -21,8 +21,7 @@
 #include <Arduino.h>
 #ifdef ESP32
 #include <esp_idf_version.h>
-#if defined(AUDIO_USE_IDF5_DRIVER) && \
-    ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 #include "driver/i2s_common.h"
 #include "driver/i2s_pdm.h"
 #include "driver/i2s_std.h"
@@ -37,19 +36,17 @@
 #include "AudioOutputI2S.h"
 
 #if defined(ESP32) || defined(ESP8266)
-AudioOutputI2S::AudioOutputI2S(int port, int output_mode, int dma_buf_count,
-                               int use_apll) {
+AudioOutputI2S::AudioOutputI2S(int port, int output_mode, int dma_buf_count, int use_apll) {
     this->portNo = port;
     this->i2sOn = false;
     this->dma_buf_count = dma_buf_count;
-    if (output_mode != EXTERNAL_I2S && output_mode != INTERNAL_DAC &&
-        output_mode != INTERNAL_PDM) {
+    if (output_mode != EXTERNAL_I2S && output_mode != INTERNAL_DAC && output_mode != INTERNAL_PDM) {
         output_mode = EXTERNAL_I2S;
     }
     this->output_mode = output_mode;
     this->use_apll = use_apll;
 
-    // set defaults
+    //set defaults
     mono = false;
     lsb_justified = false;
     bps = 16;
@@ -79,12 +76,13 @@ AudioOutputI2S::AudioOutputI2S(long sampleRate, pin_size_t sck,
 }
 #endif
 
-AudioOutputI2S::~AudioOutputI2S() { stop(); }
+AudioOutputI2S::~AudioOutputI2S() {
+    stop();
+}
 
 bool AudioOutputI2S::SetPinout() {
 #ifdef ESP32
-#if defined(AUDIO_USE_IDF5_DRIVER) && \
-    ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
     if (output_mode == INTERNAL_DAC || output_mode == INTERNAL_PDM) {
         return false; // Not allowed
     }
@@ -108,7 +106,8 @@ bool AudioOutputI2S::SetPinout() {
         .bck_io_num = bclkPin,
         .ws_io_num = wclkPin,
         .data_out_num = doutPin,
-        .data_in_num = I2S_PIN_NO_CHANGE};
+        .data_in_num = I2S_PIN_NO_CHANGE
+    };
     i2s_set_pin((i2s_port_t)portNo, &pins);
     return true;
 #endif
@@ -150,11 +149,10 @@ bool AudioOutputI2S::SetPinout(int bclk, int wclk, int dout, int mclk) {
 
 bool AudioOutputI2S::SetRate(int hz) {
     // TODO - have a list of allowable rates from constructor, check them
-    this->hertz = hz;
+    this->hertz = 2 * hz;
     if (i2sOn) {
 #ifdef ESP32
-#if defined(AUDIO_USE_IDF5_DRIVER) && \
-    ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
         uint32_t rate = (uint32_t)AdjustI2SRate(hz);
         esp_err_t err;
         if (output_mode == INTERNAL_PDM) {
@@ -219,7 +217,7 @@ bool AudioOutputI2S::SetMclk(bool enabled) {
     (void)enabled;
 #ifdef ESP32
     if (output_mode == INTERNAL_DAC || output_mode == INTERNAL_PDM) {
-        return false; // Not allowed
+        return false;    // Not allowed
     }
 
     use_mclk = enabled;
@@ -231,8 +229,7 @@ bool AudioOutputI2S::SetMclk(bool enabled) {
 
 bool AudioOutputI2S::begin(bool txDAC) {
 #ifdef ESP32
-#if defined(AUDIO_USE_IDF5_DRIVER) && \
-    ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
     (void)txDAC;
     if (!i2sOn) {
         i2s_chan_config_t chan_cfg = {
@@ -292,6 +289,9 @@ bool AudioOutputI2S::begin(bool txDAC) {
         if (use_apll == APLL_AUTO) {
             // don't use audio pll on buggy rev0 chips
             use_apll = APLL_DISABLE;
+            //esp_chip_info_t out_info;
+            //esp_chip_info(&out_info);
+            //if (out_info.revision > 0)
             {
                 use_apll = APLL_ENABLE;
             }
@@ -315,23 +315,21 @@ bool AudioOutputI2S::begin(bool txDAC) {
         i2s_comm_format_t comm_fmt;
         if (output_mode == INTERNAL_DAC) {
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
-            comm_fmt = (i2s_comm_format_t)I2S_COMM_FORMAT_STAND_MSB;
+            comm_fmt = (i2s_comm_format_t) I2S_COMM_FORMAT_STAND_MSB;
 #else
-            comm_fmt = (i2s_comm_format_t)I2S_COMM_FORMAT_I2S_MSB;
+            comm_fmt = (i2s_comm_format_t) I2S_COMM_FORMAT_I2S_MSB;
 #endif
         } else if (lsb_justified) {
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
-            comm_fmt = (i2s_comm_format_t)I2S_COMM_FORMAT_STAND_MSB;
+            comm_fmt = (i2s_comm_format_t) I2S_COMM_FORMAT_STAND_MSB;
 #else
-            comm_fmt =
-                (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_LSB);
+            comm_fmt = (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_LSB);
 #endif
         } else {
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 2, 0)
             comm_fmt = (i2s_comm_format_t)(I2S_COMM_FORMAT_STAND_I2S);
 #else
-            comm_fmt =
-                (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB);
+            comm_fmt = (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB);
 #endif
         }
 
@@ -344,17 +342,16 @@ bool AudioOutputI2S::begin(bool txDAC) {
             .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // lowest interrupt priority
             .dma_buf_count = dma_buf_count,
             .dma_buf_len = 128,
-            .use_apll = use_apll,       // Use audio PLL
+            .use_apll = use_apll, // Use audio PLL
             .tx_desc_auto_clear = true, // Silence on underflow
-            .fixed_mclk = use_mclk,     // Unused
+            .fixed_mclk = use_mclk, // Unused
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 0)
-            .mclk_multiple = I2S_MCLK_MULTIPLE_256,    // Unused
+            .mclk_multiple = I2S_MCLK_MULTIPLE_256, // Unused
             .bits_per_chan = I2S_BITS_PER_CHAN_DEFAULT // Use bits per sample
 #endif
         };
         audioLogger->printf("+%d %p\n", portNo, &i2s_config_dac);
-        if (i2s_driver_install((i2s_port_t)portNo, &i2s_config_dac, 0, NULL) !=
-            ESP_OK) {
+        if (i2s_driver_install((i2s_port_t)portNo, &i2s_config_dac, 0, NULL) != ESP_OK) {
             audioLogger->println("ERROR: Unable to install I2S drives\n");
         }
         if (output_mode == INTERNAL_DAC || output_mode == INTERNAL_PDM) {
@@ -385,8 +382,7 @@ bool AudioOutputI2S::begin(bool txDAC) {
             return false;
         }
         if (!txDAC) {
-            audioLogger->printf_P(PSTR("I2SNoDAC: esp8266 arduino core should be "
-                                       "upgraded to avoid conflicts with SPI\n"));
+            audioLogger->printf_P(PSTR("I2SNoDAC: esp8266 arduino core should be upgraded to avoid conflicts with SPI\n"));
         }
 #endif
     }
@@ -412,7 +408,7 @@ bool AudioOutputI2S::begin(bool txDAC) {
 
 bool AudioOutputI2S::ConsumeSample(int16_t sample[2]) {
 
-    // return if we haven't called ::begin yet
+    //return if we haven't called ::begin yet
     if (!i2sOn) {
         return false;
     }
@@ -435,28 +431,22 @@ bool AudioOutputI2S::ConsumeSample(int16_t sample[2]) {
         int16_t r = Amplify(ms[RIGHTCHANNEL]) + 0x8000;
         s32 = ((r & 0xffff) << 16) | (l & 0xffff);
     } else {
-        s32 = ((Amplify(ms[RIGHTCHANNEL])) << 16) |
-              (Amplify(ms[LEFTCHANNEL]) & 0xffff);
+        s32 = ((Amplify(ms[RIGHTCHANNEL])) << 16) | (Amplify(ms[LEFTCHANNEL]) & 0xffff);
     }
-#if defined(AUDIO_USE_IDF5_DRIVER) && \
-    ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
     size_t bytes_written;
     i2s_channel_write(txHandle, &s32, sizeof(uint32_t), &bytes_written, 0);
     return bytes_written;
 #else
     size_t i2s_bytes_written;
-    i2s_write((i2s_port_t)portNo, (const char *)&s32, sizeof(uint32_t),
-              &i2s_bytes_written, 0);
+    i2s_write((i2s_port_t)portNo, (const char*)&s32, sizeof(uint32_t), &i2s_bytes_written, 0);
     return i2s_bytes_written;
 #endif
 #elif defined(ESP8266)
-    uint32_t s32 =
-        ((Amplify(ms[RIGHTCHANNEL])) << 16) | (Amplify(ms[LEFTCHANNEL]) & 0xffff);
-    return i2s_write_sample_nb(
-        s32); // If we can't store it, return false.  OTW true
+    uint32_t s32 = ((Amplify(ms[RIGHTCHANNEL])) << 16) | (Amplify(ms[LEFTCHANNEL]) & 0xffff);
+    return i2s_write_sample_nb(s32); // If we can't store it, return false.  OTW true
 #elif defined(ARDUINO_ARCH_RP2040)
-    uint32_t s32 =
-        ((Amplify(ms[RIGHTCHANNEL])) << 16) | (Amplify(ms[LEFTCHANNEL]) & 0xffff);
+    uint32_t s32 = ((Amplify(ms[RIGHTCHANNEL])) << 16) | (Amplify(ms[LEFTCHANNEL]) & 0xffff);
     return !!i2s.write((int32_t)s32, false);
 #endif
 }
@@ -482,14 +472,13 @@ bool AudioOutputI2S::stop() {
     }
 
 #ifdef ESP32
-#if defined(AUDIO_USE_IDF5_DRIVER) && \
-    ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#if defined(AUDIO_USE_IDF5_DRIVER) && ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
     i2s_channel_disable(txHandle);
     i2s_del_channel(txHandle);
 #else
     i2s_zero_dma_buffer((i2s_port_t)portNo);
     audioLogger->printf("UNINSTALL I2S\n");
-    i2s_driver_uninstall((i2s_port_t)portNo); // stop & destroy i2s driver
+    i2s_driver_uninstall((i2s_port_t)portNo); //stop & destroy i2s driver
 #endif
 #elif defined(ESP8266)
     i2s_end();
